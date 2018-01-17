@@ -90,7 +90,7 @@ mat3 rotate(float theta, vec3 axis) {
                  );
 }
 
-
+// 2 dimension rotation
 vec2 rotate2D(vec2 p, float angle) {
     float c = cos(angle); float s = sin(angle);
     return vec2 (
@@ -252,16 +252,19 @@ vec4 sceneSDF2(vec3 samplePoint) {
 //    pos_n.x = mod(clamp(pos_n.x, -1.5, 0.0), 0.7) - 0.35;
 //    pos_n.z = mod(clamp(pos_n.z, -4.0, 0.0), 2.0) - 1.0;
     
+    float step1 = step(mod(u_time*0.1, 2.0), 1.0);
+    float step2 = 1.0 - step(mod(u_time*0.1, 2.0), 1.0);
+    
     vec4 neuron;
     float cy_h = 10.0;
     float cy_w = 0.05;
     
-//    vec3 cy_color = step(mod(u_time, )) vec3(0.8*sin(length(samplePoint)+u_time))*2. : vec3(0.8+0.2*sin(length(samplePoint+u_time)), 0.8+0.2*sin(length(samplePoint)+u_time), 0.0);
-    
-    vec3 cy_color = mod(u_time*0.1, 2.0) < 1.0 ? vec3(0.8*sin(length(samplePoint)+u_time))*2. : vec3(0.8+0.2*sin(length(samplePoint+u_time)), 0.8+0.2*sin(length(samplePoint)+u_time), 0.0);
-    vec3 sp_color = mod(u_time*0.1, 2.0) < 1.0 ? vec3(0.8*sin(length(samplePoint)+u_time))*2. : vec3(0.8, 0.8, 0.0);
-//    vec3 cy_color = mod(u_time*0.1, 2.0) < 1.0 ? vec3(0.8*sin(length(samplePoint)+u_time))*2. : vec3(1.0, 1.0, 1.0);
-//    vec3 sp_color = mod(u_time*0.1, 2.0) < 1.0 ? vec3(0.8*sin(length(samplePoint)+u_time))*2. : vec3(1.0, 1.0, 1.0);
+//    vec3 cy_color = mod(u_time*0.1, 2.0) < 1.0 ? vec3(0.8*sin(length(samplePoint)+u_time))*2. : vec3(0.8+0.2*sin(length(samplePoint+u_time)), 0.8+0.2*sin(length(samplePoint)+u_time), 0.0);
+//    vec3 sp_color = mod(u_time*0.1, 2.0) < 1.0 ? vec3(0.8*sin(length(samplePoint)+u_time))*2. : vec3(0.8, 0.8, 0.0);
+    vec3 cy_color = vec3(0.8*sin(length(samplePoint)+u_time))*2. * (step1+step2);
+    cy_color += vec3(0.8+0.2*sin(length(samplePoint+u_time)), 0.8+0.2*sin(length(samplePoint)+u_time), 0.0) * (step1+step2);
+    vec3 sp_color = vec3(0.8*sin(length(samplePoint)+u_time))*2. * (step1+step2);
+    sp_color += vec3(0.8, 0.8, 0.0) * (step1+step2);
     
     
     // first set of the cylinders
@@ -270,93 +273,109 @@ vec4 sceneSDF2(vec3 samplePoint) {
 //    p1.xy = rotate2D(p1.xy, length(p1.x)*0.2);
 //    p1.yz = rotate2D(p1.yz, length(p1.y+0.1)*0.5);
     p1.xy = rotate2D(p1.xy, 2.0/PI);
-    p1.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+sin(u_time+p1.y))*0.32 : sin(u_time+sin(u_time+p1.y))* cos(easy_random(p1.xy));
-    p1.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+cos(u_time+p1.x))*0.5  : cos(u_time+cos(u_time+p1.x))* sin(easy_random(p1.xy));
+    p1.x += sin(u_time+sin(u_time+p1.y))*0.32 * (step1);
+    p1.x += sin(u_time+sin(u_time+p1.y))* (easy_random(p1.xy)) * (step2);
+    p1.y += cos(u_time+cos(u_time+p1.x))*0.5 * (step1);
+    p1.y += cos(u_time+cos(u_time+p1.x))* (easy_random(p1.xy)) * (step2);
+//    p1.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+sin(u_time+p1.y))*0.32 : sin(u_time+sin(u_time+p1.y))* (easy_random(p1.xy));
+//    p1.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+cos(u_time+p1.x))*0.5  : cos(u_time+cos(u_time+p1.x))* (easy_random(p1.xy));
     vec4 sp1 = vec4(sp_color, sphereSDF(p1, 0.35) + 0.02 * (sin(40.0*p1.x)) * (sin(40.0*p1.y)) * (cos(40.0*p1.z)));
     p1.xy = repeatAng(p1.xy, 3.0);
     float cy_1 = cylinderSDF(p1.xzy, cy_h, cy_w);
     vec4 cy1 = vec4(cy_color, cy_1);
-    cy1 = unionWithSmoothSDF(cy1, sp1, 8.0);
+    cy1 = unionWithSmoothSDF(cy1, sp1, 10.0);
     
     
     // second set of the cylinders
 //    vec3 p2 = samplePoint + cos(u_time)*.80;
     vec3 p2 = samplePoint+vec3(sin(u_time*0.5)*0.5);
-//    p2.x += sin(u_time+cos(u_time+p2.y))*0.57;
-//    p2.y += cos(u_time+sin(u_time+p2.x))*0.425;
-    p2.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p2.y))*0.57  : sin(u_time+sin(u_time+p2.y))* cos(easy_random(p2.xy));
-    p2.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p2.x))*0.425 : cos(u_time+cos(u_time+p2.x))* sin(easy_random(p2.xy));
+    p2.x += sin(u_time+cos(u_time+p2.y))*0.57 * step1;
+    p2.x += sin(u_time+sin(u_time+p2.y))* (easy_random(p2.xy)) * step2;
+    p2.y += cos(u_time+sin(u_time+p2.x))*0.425 * step1;
+    p2.y += cos(u_time+cos(u_time+p2.x))* (easy_random(p2.xy)) * step2;
+//    p2.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p2.y))*0.57  : sin(u_time+sin(u_time+p2.y))* (easy_random(p2.xy));
+//    p2.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p2.x))*0.425 : cos(u_time+cos(u_time+p2.x))* (easy_random(p2.xy));
     p2 = p2 * rotateY(TWO_PI/4.0);
     vec4 sp2 = vec4(sp_color, sphereSDF(p2, 0.35) + 0.02 * (sin(40.0*p2.x)) * (sin(40.0*p2.y)) * (cos(40.0*p2.z)));
     p2.xy = repeatAng(p2.xy, 3.0);
     float cy_2 = cylinderSDF(p2.xzy, cy_h, cy_w);
     vec4 cy2 = vec4(cy_color, cy_2);
-    cy2 = unionWithSmoothSDF(cy2, sp2, 8.0);
+    cy2 = unionWithSmoothSDF(cy2, sp2, 10.0);
     
     // third set of the cylinders
     vec3 p3 = samplePoint+vec3(cos(u_time*0.5)*0.45);
-//    p3.x += sin(u_time+cos(u_time+p3.y))*0.62;
-//    p3.y += cos(u_time+sin(u_time+p3.x))*0.68;
-    p3.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p3.y))*0.62  : sin(u_time+sin(u_time+p3.y))* cos(easy_random(p3.xy));
-    p3.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p3.x))*0.68  : cos(u_time+cos(u_time+p3.x))* sin(easy_random(p3.xy));
+    p3.x += sin(u_time+cos(u_time+p3.y))*0.62 * step1;
+    p3.x += sin(u_time+sin(u_time+p3.y))* (easy_random(p3.xy)) * step2;
+    p3.y += cos(u_time+sin(u_time+p3.x))*0.68;
+    p3.y += cos(u_time+cos(u_time+p3.x))* (easy_random(p3.xy)) * step2;
+//    p3.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p3.y))*0.62  : sin(u_time+sin(u_time+p3.y))* (easy_random(p3.xy));
+//    p3.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p3.x))*0.68  : cos(u_time+cos(u_time+p3.x))* (easy_random(p3.xy));
     p3 = p3 * rotateY(TWO_PI/4.0) * rotateX(TWO_PI/8.0);
     vec4 sp3 = vec4(sp_color, sphereSDF(p3, 0.35) + 0.02 * (sin(40.0*p3.x)) * (sin(40.0*p3.y)) * (cos(40.0*p3.z)));
     p3.xy = repeatAng(p3.xy, 3.0);
     float cy_3 = cylinderSDF(p3.xzy, cy_h, cy_w);
     vec4 cy3 = vec4(cy_color, cy_3);
-    cy3 = unionWithSmoothSDF(cy3, sp3, 8.0);
+    cy3 = unionWithSmoothSDF(cy3, sp3, 10.0);
     
     // fourth set of the cylinders
     vec3 p4 = samplePoint+vec3(cos(u_time*0.5)*0.5, sin(u_time*0.5)*0.5, 0.);
-//    p4.x += sin(u_time+cos(u_time+p4.y))*0.5;
-//    p4.y += cos(u_time+sin(u_time+p4.x))*0.625;
-    p4.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p4.y))*0.5   : sin(u_time+sin(u_time+p4.y))* cos(easy_random(p4.xy));
-    p4.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p4.x))*0.625 : cos(u_time+cos(u_time+p4.x))* sin(easy_random(p4.xy));
+    p4.x += sin(u_time+cos(u_time+p4.y))*0.5 * step1;
+    p4.x += sin(u_time+sin(u_time+p4.y))* (easy_random(p4.xy)) * step2;
+    p4.y += cos(u_time+sin(u_time+p4.x))*0.625 * step1;
+    p4.y += cos(u_time+cos(u_time+p4.x))* (easy_random(p4.xy)) * step2;
+//    p4.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p4.y))*0.5   : sin(u_time+sin(u_time+p4.y))* (easy_random(p4.xy));
+//    p4.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p4.x))*0.625 : cos(u_time+cos(u_time+p4.x))* (easy_random(p4.xy));
     p4 = p4 * rotateY(TWO_PI/4.0) * rotateX(-TWO_PI/8.0);
     vec4 sp4 = vec4(sp_color, sphereSDF(p4, 0.35) + 0.02 * (sin(40.0*p4.x)) * (sin(40.0*p4.y)) * (cos(40.0*p4.z)));
     p4.xy = repeatAng(p4.xy, 3.0);
     float cy_4 = cylinderSDF(p4.xzy, cy_h, cy_w);
     vec4 cy4 = vec4(cy_color, cy_4);
-    cy4 = unionWithSmoothSDF(cy4, sp4, 8.0);
+    cy4 = unionWithSmoothSDF(cy4, sp4, 10.0);
     
     // fifth set of the cylinders
     vec3 p5 = samplePoint+vec3(0., sin(u_time*0.5)*0.5, cos(u_time*0.5)*0.45);
-//    p5.x += sin(u_time+cos(u_time+p5.y))*cos(u_time)*0.76;
-//    p5.y += cos(u_time+sin(u_time+p5.z))*sin(u_time)*0.78;
-    p5.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p5.y))*cos(u_time)*0.76 : sin(u_time+sin(u_time+p5.y))* cos(easy_random(p5.xy));
-    p5.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p5.z))*sin(u_time)*0.78 : cos(u_time+cos(u_time+p5.x))* sin(easy_random(p5.xy));
+    p5.x += sin(u_time+cos(u_time+p5.y))*cos(u_time)*0.76 * step1;
+    p5.x += sin(u_time+sin(u_time+p5.y))* (easy_random(p5.xy)) * step2;
+    p5.y += cos(u_time+sin(u_time+p5.z))*sin(u_time)*0.78 * step1;
+    p5.y += cos(u_time+cos(u_time+p5.x))* (easy_random(p5.xy)) * step2;
+//    p5.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p5.y))*cos(u_time)*0.76 : sin(u_time+sin(u_time+p5.y))* (easy_random(p5.xy));
+//    p5.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p5.z))*sin(u_time)*0.78 : cos(u_time+cos(u_time+p5.x))* (easy_random(p5.xy));
     p5 = p5 * rotateX(TWO_PI/4.);
     vec4 sp5 = vec4(sp_color, sphereSDF(p5, 0.35) + 0.02 * (sin(40.0*p5.x)) * (sin(40.0*p5.y)) * (cos(40.0*p5.z)));
     p5.xy = repeatAng(p5.xy, 3.0);
     float cy_5 = cylinderSDF(p5.xzy, cy_h, cy_w);
     vec4 cy5 = vec4(cy_color, cy_5);
-    cy5 = unionWithSmoothSDF(cy5, sp5, 8.0);
+    cy5 = unionWithSmoothSDF(cy5, sp5, 10.0);
     
     // sixth set of the cylinders
     vec3 p6 = samplePoint+vec3(sin(u_time*0.5)*0.45, 0., cos(u_time*0.5)*0.5);
-//    p6.x += sin(u_time+cos(u_time+p6.y))*sin(u_time*1.2)*0.7;
-//    p6.y += cos(u_time+sin(u_time+p6.z*p6.y))*cos(u_time*0.85)*0.7;
-    p6.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p6.y))*sin(u_time*1.2)*0.7       : sin(u_time+sin(u_time+p6.y))* cos(easy_random(p6.xy));
-    p6.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p6.z*p6.y))*cos(u_time*0.85)*0.7 : cos(u_time+cos(u_time+p6.x))* sin(easy_random(p6.xy));
+    p6.x += sin(u_time+cos(u_time+p6.y))*sin(u_time*1.2)*0.7 * step1;
+    p6.x += sin(u_time+sin(u_time+p6.y))* (easy_random(p6.xy)) * step2;
+    p6.y += cos(u_time+sin(u_time+p6.z*p6.y))*cos(u_time*0.85)*0.7 * step1;
+    p6.y += cos(u_time+cos(u_time+p6.x))* (easy_random(p6.xy)) * step2;
+//    p6.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p6.y))*sin(u_time*1.2)*0.7       : sin(u_time+sin(u_time+p6.y))* (easy_random(p6.xy));
+//    p6.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p6.z*p6.y))*cos(u_time*0.85)*0.7 : cos(u_time+cos(u_time+p6.x))* (easy_random(p6.xy));
     p6 = p6 * rotateX(TWO_PI/8.);
     vec4 sp6 = vec4(sp_color, sphereSDF(p6, 0.35) + 0.02 * (sin(40.0*p6.x)) * (sin(40.0*p6.y)) * (cos(40.0*p6.z)));
     p6.xy = repeatAng(p6.xy, 3.0);
     float cy_6 = cylinderSDF(p6.xzy, cy_h, cy_w);
     vec4 cy6 = vec4(cy_color, cy_6);
-    cy6 = unionWithSmoothSDF(cy6, sp6, 8.0);
+    cy6 = unionWithSmoothSDF(cy6, sp6, 10.0);
     
     // seventh set of the cyclinders
     vec3 p7 = samplePoint+vec3(0.0, 0.0, cos(u_time*0.5)*sin(u_time*0.5));
-//    p7.x += sin(u_time+cos(u_time+p7.y))*abs(cos(u_time*1.1))*0.72;
-//    p7.y += cos(u_time+sin(u_time+p7.z))*abs(sin(u_time*1.15))*0.725;
-    p7.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p7.y))*abs(cos(u_time*1.1))*0.72   : sin(u_time+sin(u_time+p7.y))* cos(easy_random(p7.xy));
-    p7.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p7.z))*abs(sin(u_time*1.15))*0.725 : cos(u_time+cos(u_time+p7.x))* sin(easy_random(p7.xy));
+    p7.x += sin(u_time+cos(u_time+p7.y))*abs(cos(u_time*1.1))*0.72 * step1;
+    p7.x += sin(u_time+sin(u_time+p7.y))* (easy_random(p7.xy)) * step2;
+    p7.y += cos(u_time+sin(u_time+p7.z))*abs(sin(u_time*1.15))*0.725 * step1;
+    p7.y += cos(u_time+cos(u_time+p7.x))* (easy_random(p7.xy)) * step2;
+//    p7.x += mod(u_time*0.1, 2.0) < 1.0 ? sin(u_time+cos(u_time+p7.y))*abs(cos(u_time*1.1))*0.72   : sin(u_time+sin(u_time+p7.y))* (easy_random(p7.xy));
+//    p7.y += mod(u_time*0.1, 2.0) < 1.0 ? cos(u_time+sin(u_time+p7.z))*abs(sin(u_time*1.15))*0.725 : cos(u_time+cos(u_time+p7.x))* (easy_random(p7.xy));
     p7 = p7 * rotateX(-TWO_PI/8.);
     vec4 sp7 = vec4(sp_color, sphereSDF(p7, 0.35) + 0.02 * (sin(40.0*p7.x)) * (sin(40.0*p7.y)) * (cos(40.0*p7.z)));
     p7.xy = repeatAng(p7.xy, 3.0);
     float cy_7 = cylinderSDF(p7.xzy, cy_h, cy_w);
     vec4 cy7 = vec4(cy_color, cy_7);
-    cy7 = unionWithSmoothSDF(cy7, sp7, 8.0);
+    cy7 = unionWithSmoothSDF(cy7, sp7, 10.0);
     
     neuron = unionSDF2(cy1, cy2);
     neuron = unionSDF2(neuron, cy3);

@@ -25,8 +25,8 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    exp.begin();
-    ofClear(0);
+//    exp.begin();
+//    ofClear(0);
     
     ofSetWindowTitle("FPS : " + ofToString(ofGetFrameRate()));
     
@@ -36,8 +36,8 @@ void ofApp::draw(){
     ofDrawRectangle(0, 0, ofGetWidth(), ofGetHeight());
     shader.end();
     
-    exp.end();
-    exp.draw(0, 0);
+//    exp.end();
+//    exp.draw(0, 0);
 }
 
 //--------------------------------------------------------------
